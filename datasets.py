@@ -28,6 +28,9 @@ class CarOrientationDataset(Dataset):
             self.dataset = self.filter_dataset(self.dataset)
 
 
+
+
+
     def filter_dataset(self, df):
         # Get even number of chi/weichao
         df1 = df[df["source"].isin(["chi_multi_image_train", "chi_full_image_train"])]
@@ -40,6 +43,8 @@ class CarOrientationDataset(Dataset):
         df = df.groupby('orientation_class').apply(lambda x: x.sample(min_bin)).reset_index(drop=True)
 
         return df
+
+
 
 
 
@@ -62,6 +67,9 @@ class CarOrientationDataset(Dataset):
             return df[df["source"] == "EPFL"].reset_index(drop=True)
         else:
             raise ValueError("Split must be one of {'train', 'val', 'test'}, got {}".format(split))
+
+
+
 
 
     def create_dataset(self, save_file):
@@ -144,15 +152,13 @@ class CarOrientationDataset(Dataset):
 
 
 
-
     def get_image(self, im_file):
         # Load image
         im = Image.open(im_file).convert('RGB')
 
         # Transform image
         transforms_train = transforms.Compose([
-            transforms.Resize(256),
-            transforms.RandomCrop(224),
+            transforms.RandomResizedCrop(224, scale=(0.7, 1.0)),
             transforms.ColorJitter(.1,.1,.1,.1),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
@@ -166,8 +172,14 @@ class CarOrientationDataset(Dataset):
         return transforms_train(im) if self.split == "train" else transforms_test(im)
 
 
+
+
+
     def convert_orientation_to_class(self, orientation, bins=36):
         return ((np.round(orientation)%360)/(360/bins)).astype(int)
+
+
+
 
 
     def __getitem__(self, idx):
@@ -183,9 +195,14 @@ class CarOrientationDataset(Dataset):
             'orientation': row['orientation_class'],
         }
 
+
+
+
+
     def show(self, idx):
-        # Show the image and the orientation
+        # TODO: Show the image and the orientation
         pass
+
 
 
 
@@ -193,6 +210,7 @@ class CarOrientationDataset(Dataset):
 def get_angle_between_points(point1, point2):
     # Points are in right-handed coordinate system - get the angle in the x,-z plane
     return np.arctan2(-(point2[2]-point1[2]), (point2[0]-point1[0]))*(180.0/np.pi)
+
 
 
 
@@ -209,6 +227,7 @@ def get_orientation_chi(keypoint_file):
     keypoints = np.array([array[0], -array[1], -array[2]])
 
     return get_angle_between_points(keypoints[:,17], keypoints[:,16])
+
 
 
 
